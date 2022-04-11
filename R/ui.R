@@ -8,21 +8,17 @@
 
 library(shiny)
 
-ui <- navbarPage(title = "Random generator",
-                 tabPanel(title = "Normal data",
-                          plotOutput("norm"),
-                          actionButton("renorm", "Resample")
+ui <- navbarPage(title = "SJHack2022_Project3",
+                 tabPanel(title = "A web app for fine-scale population/ethnicity identification and visualization",
+                          verbatimTextOutput("descipt")
                  ),
-                 navbarMenu(title = "Other data",
-                            tabPanel(title = "Uniform data",
-                                     plotOutput("unif"),
-                                     actionButton("reunif", "Resample")
-                            ),
-                            tabPanel(title = "Chi Squared data",
-                                     plotOutput("chisq"),
-                                     actionButton("rechisq", "Resample")
-                            )
+                 tabPanel(title = "Uniform data",
+                          plotOutput("unif"),
+                          actionButton("reunif", "Resample")
+                 ),
+                 tabPanel(title = "Chi Squared data",
+                          plotOutput("chisq"),
+                          actionButton("rechisq", "Resample")
                  )
+                 
 )
-
-
