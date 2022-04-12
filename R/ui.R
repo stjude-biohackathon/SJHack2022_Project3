@@ -8,7 +8,7 @@
 
 library(shiny)
 
-pca_values <- read.table(file = "C:/Users/hkim8/Documents/SJHack2022_Project3/data/1KG.inhouse.tsv",
+pca_values <- read.table(file = "../data/1KG.inhouse.tsv",
                          sep = "\t", header = TRUE,
                          stringsAsFactors = FALSE, check.names = FALSE)
 
