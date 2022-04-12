@@ -9,15 +9,18 @@
 library(shiny)
 library(ggplot2)
 library(reticulate)
-source_python("./code/gnomADPCAndAncestry2.py")
-output_path <- "./test/"
+
+use_condaenv(condaenv = "/opt/anaconda3/envs/r-reticulate", conda = "/opt/anaconda3/bin/conda")
+
+source_python("../gnomADPCAndAncestry2.py")
+output_path <- "../test/tmp.tsv.gz"
 
 options(shiny.maxRequestSize = 30*1024^2)
 
 server <- function(input, output) {
   
   pca_values <- reactive({
-    df <- read.table(file = "C:/Users/hkim8/Documents/SJHack2022_Project3/data/1KG.inhouse.tsv",
+    df <- read.table(file = "../data/1KG.inhouse.tsv",
                sep = "\t", header = TRUE,
                stringsAsFactors = FALSE, check.names = FALSE)
     rownames(df) <- df[,"Individual.ID"]
