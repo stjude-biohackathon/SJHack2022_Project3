@@ -8,26 +8,41 @@
 
 library(shiny)
 library(ggplot2)
+library(reticulate)
+source_python("/home/wchen1/biohackathon/code/gnomADPCAndAncestry.py")
+output_path <- "/home/wchen1/biohackathon/test/"
+
+options(shiny.maxRequestSize = 30*1024^2)
 
 server <- function(input, output) {
   
   pca_values <- reactive({
-    read.table(file = "C:/Users/hkim8/Documents/SJHack2022_Project3/data/1KG.inhouse.tsv",
+    df <- read.table(file = "C:/Users/hkim8/Documents/SJHack2022_Project3/data/1KG.inhouse.tsv",
                sep = "\t", header = TRUE,
                stringsAsFactors = FALSE, check.names = FALSE)
+    rownames(df) <- df[,"Individual.ID"]
+    return(df)
   })
   
   rv <- reactiveValues(
+    file_path = NULL,
     dim1 = NULL,
     dim2 = NULL,
+    allLabels = NULL,
+    person = NULL,
     unif = runif(500),
     chisq = rchisq(500, 2))
   
   observeEvent(input$pca_button, {
     rv$dim1 <- pca_values()[,input$dim1]
     rv$dim2 <- pca_values()[,input$dim2]
+    rv$allLabels <- pca_values()[,"allLabels"]
+    rv$person <- input$person
+    rv$pred <- pca_values()[input$person,"allLabels"]
+    rv$file_path <- input$file1$datapath
+    rv$ref_file <- input$ref_file
+    hail_run(rv$file_path, rv$ref_file, output_path)
     })
-  observeEvent(input$rechisq, { rv$chisq <- rchisq(500, 2) })
   
   output$descipt <- renderText({
     "Team Members: Wenan Chen, Wenjian Yang, Cody Ramirez, Wenchao Zhang, Hyunjin Kim
@@ -49,6 +64,14 @@ SAS: South Asian
 Other: Other (Population Not Assigned)"
   })
   
+  output$pred <- renderText({
+    paste0("Race Prediction (",
+           isolate(input$person), "): ",
+           rv$pred, 
+           "\n\n",
+           "Probs:")
+  })
+  
   output$pca_plot <- renderPlot({
     if(is.null(rv$dim1) && is.null(rv$dim2)) {
       plot_df <- data.frame(dim1=pca_values()[,"PC1"],
@@ -56,9 +79,9 @@ Other: Other (Population Not Assigned)"
                             allLabels=pca_values()[,"allLabels"],
                             stringsAsFactors = FALSE, check.names = FALSE)
     } else {
-      plot_df <- data.frame(dim1=pca_values()[,input$dim1],
-                            dim2=pca_values()[,input$dim2],
-                            allLabels=pca_values()[,"allLabels"],
+      plot_df <- data.frame(dim1=rv$dim1,
+                            dim2=rv$dim2,
+                            allLabels=rv$allLabels,
                             stringsAsFactors = FALSE, check.names = FALSE)
     }
     
@@ -69,9 +92,5 @@ Other: Other (Population Not Assigned)"
       labs(color="Race") +
       theme_classic(base_size = 36) +
       theme(plot.title = element_text(hjust = 0, vjust = 0.5, size = 24))
-  })
-  output$chisq <- renderPlot({
-    hist(rv$chisq, breaks = 30, col = "grey", border = "white",
-         main = "500 random draws from a Chi Square distribution with two degree of freedom")
   })
 }
