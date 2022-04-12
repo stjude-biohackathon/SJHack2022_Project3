@@ -9,11 +9,12 @@
 library(shiny)
 library(ggplot2)
 library(reticulate)
+source("./functions.R")
 
 use_condaenv(condaenv = "/opt/anaconda3/envs/r-reticulate", conda = "/opt/anaconda3/bin/conda")
 
 source_python("../gnomADPCAndAncestry2.py")
-output_path <- "../test/tmp.tsv.gz"
+output_path <- "../data/ALL_GRCh38_hail01.vcf.bgz.pc.ancestry.tsv.gz"
 
 options(shiny.maxRequestSize = 30*1024^2)
 
@@ -23,7 +24,7 @@ server <- function(input, output) {
     df <- read.table(file = "../data/1KG.inhouse.tsv",
                      sep = "\t", header = TRUE,
                      stringsAsFactors = FALSE, check.names = FALSE)
-    rownames(df) <- df[,"Individual.ID"]
+    rownames(df) <- df[,"s"]
     return(df)
   })
   
@@ -31,30 +32,30 @@ server <- function(input, output) {
     file_path = NULL,
     dim1 = NULL,
     dim2 = NULL,
-    allLabels = NULL,
+    pop = NULL,
     person = NULL,
     predictions = NULL)
   
   observeEvent(input$pca_button, {
     rv$dim1 <- pca_values()[,input$dim1]
     rv$dim2 <- pca_values()[,input$dim2]
-    rv$allLabels <- pca_values()[,"allLabels"]
+    rv$pop <- pca_values()[,"pop"]
     rv$person <- input$person
-    rv$pred <- pca_values()[input$person,"allLabels"]
+    rv$pred <- pca_values()[input$person,"pop"]
     rv$file_path <- input$file1$datapath
     rv$ref_file <- input$ref_file
-    hail_run(rv$file_path, rv$ref_file, output_path)
-    
-    rv$predictions <- df <- read.table(file = output_path,
-                                       sep = "\t", header = TRUE,
-                                       stringsAsFactors = FALSE, check.names = FALSE)
-    rownames(rv$predictions) <- rv$predictions[,"Individual.ID"]
+    # hail_run(rv$file_path, rv$ref_file, output_path)
+    rv$predictions <- readHailPCAndAncestry(output_path)
+    # rv$predictions <- read.table(file = output_path,
+    #                              sep = "\t", header = TRUE,
+    #                              stringsAsFactors = FALSE, check.names = FALSE)
+    rownames(rv$predictions) <- rv$predictions[,"s"]
     
     rv$dim1 <- rv$predictions[,input$dim1]
     rv$dim2 <- rv$predictions[,input$dim2]
-    rv$allLabels <- rv$predictions[,"allLabels"]
-    rv$person <- rv$predictions[,"Individual.ID"]
-    rv$pred <-  rv$predictions[,"allLabels"]
+    rv$pop <- rv$predictions[,"pop"]
+    rv$person <- rv$predictions[,"s"]
+    rv$pred <-  rv$predictions[,"pop"]
   })
   
   output$descipt <- renderText({
@@ -80,7 +81,7 @@ Other: Other (Population Not Assigned)"
   output$pred <- renderText({
     lbl <- ""
     for(i in 1:length(rv$person)) {
-      lbl <- paste0(lbl, rv$person[i], ": ", rv$allLables[i], "\n")
+      lbl <- paste0(lbl, rv$person[i], ": ", rv$pop[i], "\n")
     }
     # paste0("Race Prediction (",
     #        isolate(input$person), "): ",
@@ -94,17 +95,17 @@ Other: Other (Population Not Assigned)"
     if(is.null(rv$dim1) && is.null(rv$dim2)) {
       plot_df <- data.frame(dim1=pca_values()[,"PC1"],
                             dim2=pca_values()[,"PC2"],
-                            allLabels=pca_values()[,"allLabels"],
+                            pop=pca_values()[,"pop"],
                             stringsAsFactors = FALSE, check.names = FALSE)
     } else {
       plot_df <- data.frame(dim1=rv$dim1,
                             dim2=rv$dim2,
-                            allLabels=rv$allLabels,
+                            pop=rv$pop,
                             stringsAsFactors = FALSE, check.names = FALSE)
     }
     
     ggplot(data = plot_df, aes(x=dim1, y=dim2)) +
-      geom_point(aes_string(color="allLabels"), size = 2) +
+      geom_point(aes_string(color="pop"), size = 2) +
       xlab(isolate(input$dim1)) +
       ylab(isolate(input$dim2)) +
       labs(color="Race") +
