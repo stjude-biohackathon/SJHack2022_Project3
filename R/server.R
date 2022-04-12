@@ -21,8 +21,8 @@ server <- function(input, output) {
   
   pca_values <- reactive({
     df <- read.table(file = "../data/1KG.inhouse.tsv",
-               sep = "\t", header = TRUE,
-               stringsAsFactors = FALSE, check.names = FALSE)
+                     sep = "\t", header = TRUE,
+                     stringsAsFactors = FALSE, check.names = FALSE)
     rownames(df) <- df[,"Individual.ID"]
     return(df)
   })
@@ -33,8 +33,7 @@ server <- function(input, output) {
     dim2 = NULL,
     allLabels = NULL,
     person = NULL,
-    unif = runif(500),
-    chisq = rchisq(500, 2))
+    predictions = NULL)
   
   observeEvent(input$pca_button, {
     rv$dim1 <- pca_values()[,input$dim1]
@@ -45,7 +44,18 @@ server <- function(input, output) {
     rv$file_path <- input$file1$datapath
     rv$ref_file <- input$ref_file
     hail_run(rv$file_path, rv$ref_file, output_path)
-    })
+    
+    rv$predictions <- df <- read.table(file = output_path,
+                                       sep = "\t", header = TRUE,
+                                       stringsAsFactors = FALSE, check.names = FALSE)
+    rownames(rv$predictions) <- rv$predictions[,"Individual.ID"]
+    
+    rv$dim1 <- rv$predictions[,input$dim1]
+    rv$dim2 <- rv$predictions[,input$dim2]
+    rv$allLabels <- rv$predictions[,"allLabels"]
+    rv$person <- rv$predictions[,"Individual.ID"]
+    rv$pred <-  rv$predictions[,"allLabels"]
+  })
   
   output$descipt <- renderText({
     "Team Members: Wenan Chen, Wenjian Yang, Cody Ramirez, Wenchao Zhang, Hyunjin Kim
@@ -68,11 +78,16 @@ Other: Other (Population Not Assigned)"
   })
   
   output$pred <- renderText({
-    paste0("Race Prediction (",
-           isolate(input$person), "): ",
-           rv$pred, 
-           "\n\n",
-           "Probs:")
+    lbl <- ""
+    for(i in 1:length(rv$person)) {
+      lbl <- paste0(lbl, rv$person[i], ": ", rv$allLables[i], "\n")
+    }
+    # paste0("Race Prediction (",
+    #        isolate(input$person), "): ",
+    #        rv$pred, 
+    #        "\n\n",
+    #        "Probs:")
+    return(lbl)
   })
   
   output$pca_plot <- renderPlot({
