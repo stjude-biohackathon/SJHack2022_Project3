@@ -9,8 +9,8 @@
 library(shiny)
 library(ggplot2)
 library(reticulate)
-source_python("/home/wchen1/biohackathon/code/gnomADPCAndAncestry.py")
-output_path <- "/home/wchen1/biohackathon/test/"
+source_python("./code/gnomADPCAndAncestry2.py")
+output_path <- "./test/"
 
 options(shiny.maxRequestSize = 30*1024^2)
 
